@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEBUG 1
+
+
 #define check(err, call) { err = call; if (err) return err; }
 
 #define check_handle(err, reader, call, fmt, ...) \
@@ -44,6 +47,10 @@ int frame_reader_handle(frame_reader_t reader, int err, const char *fmt, ...) __
 
 
 int parse_frame(frame_reader_t reader, uint64_t wal_pos, char *buf, int buflen) {
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.parse_frame(): ...\n");
+    #endif
+
     int err = 0;
     check(err, read_entirely(reader, &reader->frame_value, reader->avro_reader, buf, buflen));
     check(err, process_frame(&reader->frame_value, reader, wal_pos));
@@ -52,6 +59,11 @@ int parse_frame(frame_reader_t reader, uint64_t wal_pos, char *buf, int buflen) 
 
 
 int process_frame(avro_value_t *frame_val, frame_reader_t reader, uint64_t wal_pos) {
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame(): ...\n");
+    #endif
+
+
     int err = 0, msg_type;
     size_t num_messages;
     avro_value_t msg_val, union_val, record_val;
@@ -59,11 +71,17 @@ int process_frame(avro_value_t *frame_val, frame_reader_t reader, uint64_t wal_p
     check_avro(err, reader, avro_value_get_by_index(frame_val, 0, &msg_val, NULL));
     check_avro(err, reader, avro_value_get_size(&msg_val, &num_messages));
 
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame(): %zd messages\n", num_messages);
+    #endif
     for (int i = 0; i < num_messages; i++) {
         check_avro(err, reader, avro_value_get_by_index(&msg_val, i, &union_val, NULL));
         check_avro(err, reader, avro_value_get_discriminant(&union_val, &msg_type));
         check_avro(err, reader, avro_value_get_current_branch(&union_val, &record_val));
 
+        #ifdef DEBUG
+            fprintf(stderr, "\tprotocol_client.process_frame(): msg #%d is of type %d\n", i, msg_type);
+        #endif
         switch (msg_type) {
             case PROTOCOL_MSG_BEGIN_TXN:
                 check(err, process_frame_begin_txn(&record_val, reader, wal_pos));
