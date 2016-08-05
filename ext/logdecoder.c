@@ -113,7 +113,7 @@ static void output_avro_change(LogicalDecodingContext *ctx, ReorderBufferTXN *tx
     MemoryContext oldctx = MemoryContextSwitchTo(state->memctx);
 
     #ifdef DEBUG
-        fprintf(stderr, "\tlogdecoder.output_avro_change(): txn id (xid)=%zu\n", xid);
+        fprintf(stderr, "\tlogdecoder.output_avro_change(): txn id (xid)=%u\n", xid);
     #endif
 
 
