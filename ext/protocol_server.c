@@ -9,6 +9,8 @@
 #include <string.h>
 #include "access/heapam.h"
 
+#define DEBUG 1
+
 int extract_tuple_key(schema_cache_entry *entry, Relation rel, TupleDesc tupdesc, HeapTuple tuple, bytea **key_out);
 int update_frame_with_table_schema(avro_value_t *frame_val, schema_cache_entry *entry);
 int update_frame_with_insert_raw(avro_value_t *frame_val, Oid relid, bytea *key_bin, bytea *new_bin);
@@ -17,6 +19,9 @@ int update_frame_with_delete_raw(avro_value_t *frame_val, Oid relid, bytea *key_
 
 /* Populates a wire protocol message for a "begin transaction" event. */
 int update_frame_with_begin_txn(avro_value_t *frame_val, ReorderBufferTXN *txn) {
+    // #ifdef DEBUG
+    //     fprintf(stderr, "\tprotocol_server.update_frame_with_begin_txn(): txn->xid=%d\n", txn->xid);
+    // #endif
     int err = 0;
     avro_value_t msg_val, union_val, record_val, xid_val;
 
@@ -33,6 +38,10 @@ int update_frame_with_commit_txn(avro_value_t *frame_val, ReorderBufferTXN *txn,
         XLogRecPtr commit_lsn) {
     int err = 0;
     avro_value_t msg_val, union_val, record_val, xid_val, lsn_val;
+
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_server.update_frame_with_commit_txn(): txn->xid=%X; commit_lsn=%" PRIu64 "\n", txn->xid, commit_lsn);
+    #endif
 
     check(err, avro_value_get_by_index(frame_val, 0, &msg_val, NULL));
     check(err, avro_value_append(&msg_val, &union_val, NULL));

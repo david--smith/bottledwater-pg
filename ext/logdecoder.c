@@ -6,6 +6,9 @@
 #include "replication/output_plugin.h"
 #include "utils/memutils.h"
 
+#define DEBUG 1
+
+
 /* Entry point when Postgres loads the plugin */
 extern void _PG_init(void);
 extern void _PG_output_plugin_init(OutputPluginCallbacks *cb);
@@ -101,9 +104,19 @@ static void output_avro_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN
 static void output_avro_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
         Relation rel, ReorderBufferChange *change) {
     int err = 0;
+
+    // TransactionId == uint32
+    TransactionId xid = txn->xid;
+
     HeapTuple oldtuple = NULL, newtuple = NULL;
     plugin_state *state = ctx->output_plugin_private;
     MemoryContext oldctx = MemoryContextSwitchTo(state->memctx);
+
+    #ifdef DEBUG
+        fprintf(stderr, "\tlogdecoder.output_avro_change(): txn id (xid)=%zu\n", xid);
+    #endif
+
+
     reset_frame(state);
 
     switch (change->action) {

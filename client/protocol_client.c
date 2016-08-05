@@ -117,6 +117,11 @@ int process_frame_begin_txn(avro_value_t *record_val, frame_reader_t reader, uin
     check_avro(err, reader, avro_value_get_by_index(record_val, 0, &xid_val, NULL));
     check_avro(err, reader, avro_value_get_long(&xid_val, &xid));
 
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_begin_txn(): xid=%" PRIu64 "\n", xid);
+    #endif
+
+
     if (reader->on_begin_txn) {
         check_handle(err, reader, reader->on_begin_txn(reader->cb_context, wal_pos, (uint32_t) xid),
                 "error in begin_txn callback for xid %" PRIu64, xid);
@@ -131,6 +136,10 @@ int process_frame_commit_txn(avro_value_t *record_val, frame_reader_t reader, ui
 
     check_avro(err, reader, avro_value_get_by_index(record_val, 0, &xid_val, NULL));
     check_avro(err, reader, avro_value_get_long(&xid_val, &xid));
+
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_commit_txn(): xid=%" PRIu64 "\n", xid);
+    #endif
 
     if (reader->on_commit_txn) {
         check_handle(err, reader, reader->on_commit_txn(reader->cb_context, wal_pos, (uint32_t) xid),
@@ -198,6 +207,12 @@ int process_frame_insert(avro_value_t *record_val, frame_reader_t reader, uint64
     check_avro(err, reader, avro_value_get_discriminant(&key_val, &key_present));
     check_avro(err, reader, avro_value_get_bytes(&new_val, &new_bin, &new_len));
 
+
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_insert(): wal_pos=%" PRIu64 "\n", wal_pos);
+    #endif
+
+
     schema_list_entry *entry = schema_list_lookup(reader, relid);
     if (!entry) {
         return frame_reader_handle(reader, EINVAL,
@@ -211,6 +226,7 @@ int process_frame_insert(avro_value_t *record_val, frame_reader_t reader, uint64
     }
 
     check(err, read_entirely(reader, &entry->row_value, entry->avro_reader, new_bin, new_len));
+
 
     if (reader->on_insert_row) {
         check_handle(err, reader,
@@ -237,6 +253,11 @@ int process_frame_update(avro_value_t *record_val, frame_reader_t reader, uint64
     check_avro(err, reader, avro_value_get_discriminant(&key_val, &key_present));
     check_avro(err, reader, avro_value_get_discriminant(&old_val, &old_present));
     check_avro(err, reader, avro_value_get_bytes(&new_val, &new_bin, &new_len));
+
+
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_update(): wal_pos=%" PRIu64 "\n", wal_pos);
+    #endif
 
     schema_list_entry *entry = schema_list_lookup(reader, relid);
     if (!entry) {
