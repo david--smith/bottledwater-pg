@@ -126,7 +126,7 @@ static void output_avro_change(LogicalDecodingContext *ctx, ReorderBufferTXN *tx
             }
             newtuple = &change->data.tp.newtuple->tuple;
             err = update_frame_with_insert(&state->frame_value, state->schema_cache, rel,
-                    RelationGetDescr(rel), newtuple);
+                    RelationGetDescr(rel), newtuple, xid);
             break;
 
         case REORDER_BUFFER_CHANGE_UPDATE:
