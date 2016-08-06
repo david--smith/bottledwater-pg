@@ -17,6 +17,9 @@
 
 PG_MODULE_MAGIC;
 
+#define SNAPSHOT_TRANSACTION_ID 0
+
+
 typedef struct {
     Oid relid;
     Relation rel;
@@ -329,7 +332,7 @@ bytea *format_snapshot_row(export_state *state) {
     }
 
     if (update_frame_with_insert(&state->frame_value, state->schema_cache, table->rel,
-            SPI_tuptable->tupdesc, SPI_tuptable->vals[0], (TransactionId)379)) {
+            SPI_tuptable->tupdesc, SPI_tuptable->vals[0], (TransactionId)SNAPSHOT_TRANSACTION_ID)) {
         elog(INFO, "Failed tuptable: %s", schema_debug_info(table->rel, SPI_tuptable->tupdesc));
         elog(INFO, "Failed relation: %s", schema_debug_info(table->rel, RelationGetDescr(table->rel)));
         elog(ERROR, "bottledwater_export: Avro conversion failed: %s", avro_strerror());

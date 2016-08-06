@@ -137,7 +137,7 @@ static void output_avro_change(LogicalDecodingContext *ctx, ReorderBufferTXN *tx
                 oldtuple = &change->data.tp.oldtuple->tuple;
             }
             newtuple = &change->data.tp.newtuple->tuple;
-            err = update_frame_with_update(&state->frame_value, state->schema_cache, rel, oldtuple, newtuple);
+            err = update_frame_with_update(&state->frame_value, state->schema_cache, rel, oldtuple, newtuple, xid);
             break;
 
         case REORDER_BUFFER_CHANGE_DELETE:
