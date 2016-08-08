@@ -194,6 +194,9 @@ int process_frame_table_schema(avro_value_t *record_val, frame_reader_t reader, 
 }
 
 int process_frame_insert(avro_value_t *record_val, frame_reader_t reader, uint64_t wal_pos) {
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_insert(): ...\n");
+    #endif
     int err = 0, key_present, index = 0;
     avro_value_t relid_val, key_val, new_val, branch_val, xid_val;
     int64_t relid;
@@ -201,10 +204,16 @@ int process_frame_insert(avro_value_t *record_val, frame_reader_t reader, uint64
     const void *key_bin = NULL, *new_bin = NULL;
     size_t key_len = 0, new_len = 0;
 
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_insert(): starting gets by index\n");
+    #endif
     check_avro(err, reader, avro_value_get_by_index(record_val, index++, &xid_val,  NULL));
     check_avro(err, reader, avro_value_get_by_index(record_val, index++, &relid_val, NULL));
     check_avro(err, reader, avro_value_get_by_index(record_val, index++, &key_val,   NULL));
     check_avro(err, reader, avro_value_get_by_index(record_val, index++, &new_val,   NULL));
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_insert(): starting actual gets\n");
+    #endif
     check_avro(err, reader, avro_value_get_long(&xid_val, &xid));
     check_avro(err, reader, avro_value_get_long(&relid_val, &relid));
     check_avro(err, reader, avro_value_get_discriminant(&key_val, &key_present));
@@ -212,7 +221,7 @@ int process_frame_insert(avro_value_t *record_val, frame_reader_t reader, uint64
 
 
     #ifdef DEBUG
-        fprintf(stderr, "\tprotocol_client.process_frame_insert(): XID=%ld | wal_pos=%" PRIu64 "\n", xid, wal_pos);
+        fprintf(stderr, "\tprotocol_client.process_frame_insert(): XID=%ld\n", xid);
     #endif
 
 
@@ -242,17 +251,24 @@ int process_frame_insert(avro_value_t *record_val, frame_reader_t reader, uint64
 }
 
 int process_frame_update(avro_value_t *record_val, frame_reader_t reader, uint64_t wal_pos) {
-    int err = 0, key_present, old_present;
+    int err = 0, key_present, old_present, index=0;
     avro_value_t relid_val, key_val, old_val, new_val, branch_val, xid_val;
     int64_t relid;
     long xid;
     const void *key_bin = NULL, *old_bin = NULL, *new_bin = NULL;
     size_t key_len = 0, old_len = 0, new_len = 0;
 
-    check_avro(err, reader, avro_value_get_by_index(record_val, 0, &relid_val, NULL));
-    check_avro(err, reader, avro_value_get_by_index(record_val, 1, &key_val,   NULL));
-    check_avro(err, reader, avro_value_get_by_index(record_val, 2, &old_val,   NULL));
-    check_avro(err, reader, avro_value_get_by_index(record_val, 3, &new_val,   NULL));
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_update(): starting gets by index\n");
+    #endif
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &xid_val,   NULL));
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &relid_val, NULL));
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &key_val,   NULL));
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &old_val,   NULL));
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &new_val,   NULL));
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_update(): starting gets by index\n");
+    #endif
     check_avro(err, reader, avro_value_get_long(&xid_val, &xid));
     check_avro(err, reader, avro_value_get_long(&relid_val, &relid));
     check_avro(err, reader, avro_value_get_discriminant(&key_val, &key_present));
@@ -261,7 +277,7 @@ int process_frame_update(avro_value_t *record_val, frame_reader_t reader, uint64
 
 
     #ifdef DEBUG
-        fprintf(stderr, "\tprotocol_client.process_frame_update(): XID=%ld | wal_pos=%" PRIu64 "\n", xid, wal_pos);
+        fprintf(stderr, "\tprotocol_client.process_frame_update(): XID=%ld\n", xid);
     #endif
 
     schema_list_entry *entry = schema_list_lookup(reader, relid);

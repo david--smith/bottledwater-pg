@@ -243,17 +243,17 @@ int update_frame_with_insert_raw(avro_value_t *frame_val, Oid relid, bytea *key_
 /* Populates a wire protocol message for an update event. */
 int update_frame_with_update_raw(avro_value_t *frame_val, Oid relid, bytea *key_bin,
         bytea *old_bin, bytea *new_bin, TransactionId xid) {
-    int err = 0, field=0;
+    int err = 0, index=0;
     avro_value_t msg_val, union_val, record_val, relid_val, key_val, oldrow_val, newrow_val, branch_val, xid_val;
 
     check(err, avro_value_get_by_index(frame_val, 0, &msg_val, NULL));
     check(err, avro_value_append(&msg_val, &union_val, NULL));
     check(err, avro_value_set_branch(&union_val, PROTOCOL_MSG_UPDATE, &record_val));
-    check(err, avro_value_get_by_index(&record_val, field++, &xid_val,  NULL));
-    check(err, avro_value_get_by_index(&record_val, field++, &relid_val,  NULL));
-    check(err, avro_value_get_by_index(&record_val, field++, &key_val,    NULL));
-    check(err, avro_value_get_by_index(&record_val, field++, &oldrow_val, NULL));
-    check(err, avro_value_get_by_index(&record_val, field++, &newrow_val, NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &xid_val,  NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &relid_val,  NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &key_val,    NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &oldrow_val, NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &newrow_val, NULL));
     check(err, avro_value_set_long(&xid_val, (long) xid));
     check(err, avro_value_set_long(&relid_val, relid));
     check(err, avro_value_set_bytes(&newrow_val, VARDATA(new_bin), VARSIZE(new_bin) - VARHDRSZ));

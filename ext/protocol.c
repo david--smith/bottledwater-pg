@@ -124,6 +124,10 @@ avro_schema_t schema_for_update() {
     avro_schema_t record_schema = avro_schema_record("Update", PROTOCOL_SCHEMA_NAMESPACE);
 
     avro_schema_t field_schema = avro_schema_long();
+    avro_schema_record_field_append(record_schema, "xid", field_schema);
+    avro_schema_decref(field_schema);
+
+    field_schema = avro_schema_long();
     avro_schema_record_field_append(record_schema, "relid", field_schema);
     avro_schema_decref(field_schema);
 
