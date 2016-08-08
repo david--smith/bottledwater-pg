@@ -5,4 +5,4 @@ echo 'sleeping before init db'
 sleep 7
 scripts/init_db.sh
 docker-compose up -d bottledwater-avro
-./scripts/plsql.sh
+# ./scripts/plsql.sh

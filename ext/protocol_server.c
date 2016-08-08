@@ -15,7 +15,7 @@ int extract_tuple_key(schema_cache_entry *entry, Relation rel, TupleDesc tupdesc
 int update_frame_with_table_schema(avro_value_t *frame_val, schema_cache_entry *entry);
 int update_frame_with_insert_raw(avro_value_t *frame_val, Oid relid, bytea *key_bin, bytea *new_bin, TransactionId xid);
 int update_frame_with_update_raw(avro_value_t *frame_val, Oid relid, bytea *key_bin, bytea *old_bin, bytea *new_bin, TransactionId xid);
-int update_frame_with_delete_raw(avro_value_t *frame_val, Oid relid, bytea *key_bin, bytea *old_bin);
+int update_frame_with_delete_raw(avro_value_t *frame_val, Oid relid, bytea *key_bin, bytea *old_bin, TransactionId xid);
 
 /* Populates a wire protocol message for a "begin transaction" event. */
 int update_frame_with_begin_txn(avro_value_t *frame_val, ReorderBufferTXN *txn) {
@@ -138,7 +138,7 @@ int update_frame_with_update(avro_value_t *frame_val, schema_cache_t cache, Rela
     if (old_key_bin != NULL && (VARSIZE(old_key_bin) != VARSIZE(new_key_bin) ||
             memcmp(VARDATA(old_key_bin), VARDATA(new_key_bin), VARSIZE(new_key_bin) - VARHDRSZ) != 0)) {
         /* If the primary key changed, turn the update into a delete and an insert. */
-        check(err, update_frame_with_delete_raw(frame_val, RelationGetRelid(rel), old_key_bin, old_bin));
+        check(err, update_frame_with_delete_raw(frame_val, RelationGetRelid(rel), old_key_bin, old_bin, xid));
         check(err, update_frame_with_insert_raw(frame_val, RelationGetRelid(rel), new_key_bin, new_bin, xid));
     } else {
         check(err, update_frame_with_update_raw(frame_val, RelationGetRelid(rel), new_key_bin, old_bin, new_bin, xid));
@@ -153,7 +153,7 @@ int update_frame_with_update(avro_value_t *frame_val, schema_cache_t cache, Rela
 
 /* Updates the given frame with information about a table row that was deleted.
  * This is used only during stream replication. */
-int update_frame_with_delete(avro_value_t *frame_val, schema_cache_t cache, Relation rel, HeapTuple oldtuple) {
+int update_frame_with_delete(avro_value_t *frame_val, schema_cache_t cache, Relation rel, HeapTuple oldtuple, TransactionId xid) {
     int err = 0;
     schema_cache_entry *entry;
     bytea *key_bin = NULL, *old_bin = NULL;
@@ -172,7 +172,7 @@ int update_frame_with_delete(avro_value_t *frame_val, schema_cache_t cache, Rela
         check(err, try_writing(&old_bin, &write_avro_binary, &entry->row_value));
     }
 
-    check(err, update_frame_with_delete_raw(frame_val, RelationGetRelid(rel), key_bin, old_bin));
+    check(err, update_frame_with_delete_raw(frame_val, RelationGetRelid(rel), key_bin, old_bin, xid));
 
     if (key_bin) pfree(key_bin);
     if (old_bin) pfree(old_bin);
@@ -275,16 +275,18 @@ int update_frame_with_update_raw(avro_value_t *frame_val, Oid relid, bytea *key_
 }
 
 /* Populates a wire protocol message for a delete event. */
-int update_frame_with_delete_raw(avro_value_t *frame_val, Oid relid, bytea *key_bin, bytea *old_bin) {
-    int err = 0;
-    avro_value_t msg_val, union_val, record_val, relid_val, key_val, oldrow_val, branch_val;
+int update_frame_with_delete_raw(avro_value_t *frame_val, Oid relid, bytea *key_bin, bytea *old_bin, TransactionId xid) {
+    int err = 0, index = 0;
+    avro_value_t msg_val, union_val, record_val, relid_val, key_val, oldrow_val, branch_val, xid_val;
 
     check(err, avro_value_get_by_index(frame_val, 0, &msg_val, NULL));
     check(err, avro_value_append(&msg_val, &union_val, NULL));
     check(err, avro_value_set_branch(&union_val, PROTOCOL_MSG_DELETE, &record_val));
-    check(err, avro_value_get_by_index(&record_val, 0, &relid_val,   NULL));
-    check(err, avro_value_get_by_index(&record_val, 1, &key_val,     NULL));
-    check(err, avro_value_get_by_index(&record_val, 2, &oldrow_val,  NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &xid_val,     NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &relid_val,   NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &key_val,     NULL));
+    check(err, avro_value_get_by_index(&record_val, index++, &oldrow_val,  NULL));
+    check(err, avro_value_set_long(&relid_val, (long)xid));
     check(err, avro_value_set_long(&relid_val, relid));
 
     if (key_bin) {

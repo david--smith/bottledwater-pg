@@ -312,18 +312,25 @@ int process_frame_update(avro_value_t *record_val, frame_reader_t reader, uint64
 }
 
 int process_frame_delete(avro_value_t *record_val, frame_reader_t reader, uint64_t wal_pos) {
-    int err = 0, key_present, old_present;
-    avro_value_t relid_val, key_val, old_val, branch_val;
+    int err = 0, key_present, old_present, index = 0;
+    avro_value_t relid_val, key_val, old_val, branch_val, xid_val;
     int64_t relid;
+    long xid;
     const void *key_bin = NULL, *old_bin = NULL;
     size_t key_len = 0, old_len = 0;
 
-    check_avro(err, reader, avro_value_get_by_index(record_val, 0, &relid_val, NULL));
-    check_avro(err, reader, avro_value_get_by_index(record_val, 1, &key_val,   NULL));
-    check_avro(err, reader, avro_value_get_by_index(record_val, 2, &old_val,   NULL));
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &xid_val,   NULL));
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &relid_val, NULL));
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &key_val,   NULL));
+    check_avro(err, reader, avro_value_get_by_index(record_val, index++, &old_val,   NULL));
+    check_avro(err, reader, avro_value_get_long(&xid_val, &xid));
     check_avro(err, reader, avro_value_get_long(&relid_val, &relid));
     check_avro(err, reader, avro_value_get_discriminant(&key_val, &key_present));
     check_avro(err, reader, avro_value_get_discriminant(&old_val, &old_present));
+
+    #ifdef DEBUG
+        fprintf(stderr, "\tprotocol_client.process_frame_delete(): XID=%ld\n", xid);
+    #endif
 
     schema_list_entry *entry = schema_list_lookup(reader, relid);
     if (!entry) {
