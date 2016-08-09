@@ -90,7 +90,7 @@ table_metadata_t table_mapper_update(table_mapper_t mapper, Oid relid,
      *
      * a) we could register the table with a schema id of
      *    TABLE_MAPPER_SCHEMA_ID_MISSING.  This would keep data flowing, but
-     *    mean we actually publich records to Kafka with that schema id,
+     *    mean we actually publish records to Kafka with that schema id,
      *    resulting in the Kafka replica of the database containing these
      *    less-helpful schema-missing records.  A sufficiently motivated
      *    consumer would be able to detect this and conclude that there was a
