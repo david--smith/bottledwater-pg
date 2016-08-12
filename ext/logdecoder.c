@@ -105,7 +105,7 @@ static void output_avro_change(LogicalDecodingContext *ctx, ReorderBufferTXN *tx
         Relation rel, ReorderBufferChange *change) {
     int err = 0;
 
-    // TransactionId == uint32
+    // TransactionId is a uint32
     TransactionId xid = txn->xid;
 
     HeapTuple oldtuple = NULL, newtuple = NULL;
